@@ -3,28 +3,58 @@ import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { ResultDisplay } from './components/ResultDisplay';
 import { analyzeImageWithGemini } from './services/geminiService';
-import { AnalysisResult, AnalysisStatus } from './types';
+import { AnalysisResult, AnalysisStatus, DetectionVerdict, ExifAnalysis } from './types';
 import { AlertTriangle } from 'lucide-react';
+import { analyzeExif } from './services/exifService';
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AnalysisStatus>('idle');
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exifInfo, setExifInfo] = useState<ExifAnalysis | null>(null);
 
-  const handleImageSelected = async (base64: string, mimeType: string, preview: string) => {
+  const handleImageSelected = async (
+    file: File,
+    base64: string,
+    mimeType: string,
+    preview: string
+  ) => {
     setPreviewUrl(preview);
     setStatus('analyzing');
     setError(null);
     setResult(null);
+    setExifInfo(null);
 
     try {
+      // 1) EXIF check
+      const exif = await analyzeExif(file);
+      setExifInfo(exif);
+
+      if (!exif.isOriginal) {
+        // STOP HERE – do not call Gemini
+        const reasoning =
+          exif.reasons.join(' ') +
+          ' For fraud investigation, please upload an unedited photo taken directly from the device camera.';
+
+        const exifBasedResult: AnalysisResult = {
+          verdict: DetectionVerdict.NOT_SURE,
+          confidence: 0,
+          reasoning
+        };
+
+        setResult(exifBasedResult);
+        setStatus('complete');
+        return;
+      }
+
+      // 2) Call Gemini only when EXIF shows no obvious editing
       const analysis = await analyzeImageWithGemini(base64, mimeType);
       setResult(analysis);
       setStatus('complete');
     } catch (err) {
       console.error(err);
-      setError("Failed to analyze image. Please try again or check your API key.");
+      setError('Failed to analyze image. Please try again or check your API key.');
       setStatus('error');
     }
   };
@@ -34,6 +64,7 @@ const App: React.FC = () => {
     setResult(null);
     setPreviewUrl(null);
     setError(null);
+    setExifInfo(null);
   };
 
   return (
@@ -46,7 +77,8 @@ const App: React.FC = () => {
             Was this image made by Google AI?
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Upload an image to detect signatures and styles characteristic of Google's generative models like Imagen and Gemini.
+            First we inspect the EXIF metadata for edits, then we ask Gemini to check for AI signatures
+            when the photo looks original.
           </p>
         </div>
 
@@ -86,7 +118,7 @@ const App: React.FC = () => {
       </main>
       
       <footer className="py-8 text-center text-slate-400 text-sm">
-        <p>© {new Date().getFullYear()} AI Detector. This tool uses AI to detect AI and may make mistakes.</p>
+        <p>© {new Date().getFullYear()} AI Detector. This tool uses EXIF + Gemini to detect AI and may make mistakes.</p>
       </footer>
     </div>
   );

@@ -11,3 +11,14 @@ export interface AnalysisResult {
 }
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'complete' | 'error';
+
+// EXIF analysis
+export interface ExifAnalysis {
+  isOriginal: boolean;        // true = no obvious edits found
+  reasons: string[];          // why we flagged as edited / original
+  cameraMake?: string;
+  cameraModel?: string;
+  software?: string;
+  hasGps: boolean;
+  hasExif: boolean;
+}

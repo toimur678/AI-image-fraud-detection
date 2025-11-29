@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
 
 interface ImageUploaderProps {
-  onImageSelected: (base64: string, mimeType: string, previewUrl: string) => void;
+  onImageSelected: (file: File, base64: string, mimeType: string, previewUrl: string) => void;
   isAnalyzing: boolean;
 }
 
@@ -27,7 +27,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, i
       const result = e.target?.result as string;
       const base64Data = result.split(',')[1];
       const mimeType = file.type;
-      onImageSelected(base64Data, mimeType, result);
+      onImageSelected(file, base64Data, mimeType, result);
     };
     reader.readAsDataURL(file);
   }, [onImageSelected]);
