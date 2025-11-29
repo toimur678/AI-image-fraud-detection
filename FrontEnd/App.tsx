@@ -7,6 +7,8 @@ import { ExifDisplay } from './components/ExifDisplay';
 import { analyzeImageWithGemini } from './services/geminiService';
 import { AnalysisResult, AnalysisStatus, ExifAnalysis } from './types';
 import { analyzeExif } from './services/exifService';
+import { messageBus } from './services/messageBus';
+import { useEffect } from 'react';
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AnalysisStatus>('idle');
@@ -72,6 +74,34 @@ const App: React.FC = () => {
       setStatus('error');
     }
   };
+
+  // Helper to convert base64 URL to File object so analyzeExif can read it
+  const base64ToFile = async (base64Url: string, fileName: string, mimeType: string) => {
+    const res = await fetch(base64Url);
+    const blob = await res.blob();
+    return new File([blob], fileName, { type: mimeType });
+  };
+
+  useEffect(() => {
+    const unsub = messageBus.subscribe(async (msg) => {
+      try {
+        if (msg.type === 'image-upload' && msg.payload) {
+          const { base64, mimeType, fileName, preview } = msg.payload;
+          const file = await base64ToFile(base64, fileName, mimeType);
+          handleImageSelected(file, base64, mimeType, preview || base64);
+        }
+
+        if (msg.type === 'trigger-scan') {
+          // Start second-step scan if imageData present
+          handleContinueScan();
+        }
+      } catch (e) {
+        console.error('Error handling support message', e);
+      }
+    });
+
+    return () => { if (unsub) unsub(); };
+  }, [imageData]);
 
   const handleContinueScan = async () => {
     if (!imageData) return;
@@ -163,7 +193,10 @@ const App: React.FC = () => {
 
         {/* Right Sidebar 30%: Customer Chat */}
         <div className="w-[30%] bg-slate-900/90 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden flex flex-col h-full shadow-2xl">
-          <ChatSection />
+          <ChatSection 
+            currentUser="agent" 
+            onScanImage={(file, base64, mimeType) => handleImageSelected(file, base64, mimeType, base64)}
+          />
         </div>
       </main>
     </div>
