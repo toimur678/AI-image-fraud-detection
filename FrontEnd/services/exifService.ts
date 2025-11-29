@@ -292,7 +292,8 @@ export async function analyzeExif(file: File): Promise<ExifAnalysis> {
       cameraModel: model || undefined,
       software: software || undefined,
       hasGps,
-      hasExif: true
+      hasExif: true,
+      rawMetadata: metadata
     };
   } catch (err) {
     console.error('EXIF analysis failed:', err);

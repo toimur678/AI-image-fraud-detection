@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { ResultDisplay } from './components/ResultDisplay';
+import { ChatSection } from './components/ChatSection';
+import { ExifDisplay } from './components/ExifDisplay';
 import { analyzeImageWithGemini } from './services/geminiService';
-import { AnalysisResult, AnalysisStatus, DetectionVerdict, ExifAnalysis } from './types';
-import { AlertTriangle } from 'lucide-react';
+import { AnalysisResult, AnalysisStatus, ExifAnalysis } from './types';
 import { analyzeExif } from './services/exifService';
 
 const App: React.FC = () => {
@@ -13,6 +14,28 @@ const App: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exifInfo, setExifInfo] = useState<ExifAnalysis | null>(null);
+  
+  // Timing state
+  const [exifTime, setExifTime] = useState<number | null>(null);
+  const [geminiTime, setGeminiTime] = useState<number | null>(null);
+  
+  // Store image data for the second step
+  const [imageData, setImageData] = useState<{base64: string, mimeType: string, fileName: string} | null>(null);
+
+  const logActivity = (fileName: string, eTime: number, gTime: number | 'N/A') => {
+    const logEntry = {
+      filename: fileName,
+      scanDate: new Date().toISOString(),
+      exifScanTimeMs: Math.round(eTime),
+      geminiScanTimeMs: gTime === 'N/A' ? 'N/A' : Math.round(gTime)
+    };
+
+    // Save to localStorage as a mock "file"
+    const existingLogs = JSON.parse(localStorage.getItem('activitylog') || '[]');
+    existingLogs.push(logEntry);
+    localStorage.setItem('activitylog', JSON.stringify(existingLogs));
+    console.log('Activity Logged:', logEntry);
+  };
 
   const handleImageSelected = async (
     file: File,
@@ -21,40 +44,57 @@ const App: React.FC = () => {
     preview: string
   ) => {
     setPreviewUrl(preview);
+    setImageData({ base64, mimeType, fileName: file.name });
     setStatus('analyzing');
     setError(null);
     setResult(null);
     setExifInfo(null);
+    setExifTime(null);
+    setGeminiTime(null);
 
     try {
-      // 1) EXIF check
+      const start = performance.now();
+      // 1) EXIF check only
       const exif = await analyzeExif(file);
+      const end = performance.now();
+      const duration = end - start;
+      
+      setExifTime(duration);
       setExifInfo(exif);
+      setStatus('complete'); // Finished EXIF step
 
-      if (!exif.isOriginal) {
-        // STOP HERE – do not call Gemini
-        const reasoning =
-          exif.reasons.join(' ') +
-          ' For fraud investigation, please upload an unedited photo taken directly from the device camera.';
+      // Log initial EXIF scan
+      logActivity(file.name, duration, 'N/A');
 
-        const exifBasedResult: AnalysisResult = {
-          verdict: DetectionVerdict.NOT_SURE,
-          confidence: 0,
-          reasoning
-        };
-
-        setResult(exifBasedResult);
-        setStatus('complete');
-        return;
-      }
-
-      // 2) Call Gemini only when EXIF shows no obvious editing
-      const analysis = await analyzeImageWithGemini(base64, mimeType);
-      setResult(analysis);
-      setStatus('complete');
     } catch (err) {
       console.error(err);
-      setError('Failed to analyze image. Please try again or check your API key.');
+      setError('Failed to analyze image metadata.');
+      setStatus('error');
+    }
+  };
+
+  const handleContinueScan = async () => {
+    if (!imageData) return;
+    
+    setStatus('analyzing');
+    try {
+      const start = performance.now();
+      const analysis = await analyzeImageWithGemini(imageData.base64, imageData.mimeType);
+      const end = performance.now();
+      const duration = end - start;
+
+      setGeminiTime(duration);
+      setResult(analysis);
+      setStatus('complete');
+
+      // Update log with Gemini time
+      if (exifTime !== null) {
+        logActivity(imageData.fileName, exifTime, duration);
+      }
+
+    } catch (err) {
+      console.error(err);
+      setError('Failed to analyze image with AI.');
       setStatus('error');
     }
   };
@@ -65,63 +105,70 @@ const App: React.FC = () => {
     setPreviewUrl(null);
     setError(null);
     setExifInfo(null);
+    setImageData(null);
+    setExifTime(null);
+    setGeminiTime(null);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="h-screen w-full bg-[conic-gradient(at_top_left,_var(--tw-gradient-stops))] from-[#4a5fff] via-[#5c70ff] to-[#4a5fff] flex flex-col overflow-hidden font-sans text-white">
       <Header />
       
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">
-            Was this image made by Google AI?
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            First we inspect the EXIF metadata for edits, then we ask Gemini to check for AI signatures
-            when the photo looks original.
-          </p>
-        </div>
-
-        {status === 'idle' && (
-          <ImageUploader 
-            onImageSelected={handleImageSelected} 
-            isAnalyzing={false} 
-          />
-        )}
-
-        {status === 'error' && (
-          <div className="max-w-xl mx-auto mt-8">
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex flex-col items-center text-center">
-              <div className="bg-red-100 p-3 rounded-full mb-4">
-                <AlertTriangle className="text-red-600 w-8 h-8" />
+      <main className="flex-1 flex gap-4 px-6 pb-6 min-h-0">
+        {/* Left Main Area 70% */}
+        <div className="w-[70%] flex flex-col gap-4 h-full">
+          
+          {/* Top Section 40% (Reduced size) */}
+          <div className="h-[40%] flex gap-4 min-h-0">
+            {/* Left-Top-Left: Image Viewer */}
+            <div className="w-1/2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden relative flex flex-col shadow-2xl">
+              <div className="absolute top-4 left-4 z-10 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white/80 border border-white/10">
+                Evidence File
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Analysis Failed</h3>
-              <p className="text-slate-600 mb-6">{error}</p>
-              <button 
-                onClick={handleReset}
-                className="px-6 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors"
-              >
-                Try Again
-              </button>
+              {previewUrl ? (
+                <div className="w-full h-full p-4 flex items-center justify-center">
+                  <img 
+                    src={previewUrl} 
+                    alt="Evidence" 
+                    className="max-w-full max-h-full object-contain rounded-xl shadow-lg"
+                  />
+                </div>
+              ) : (
+                <ImageUploader 
+                  onImageSelected={handleImageSelected} 
+                  isAnalyzing={status === 'analyzing'} 
+                />
+              )}
+            </div>
+
+            {/* Left-Top-Right: Control Center */}
+            <div className="w-1/2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-white/10 p-6 flex flex-col items-center justify-center relative overflow-hidden shadow-2xl">
+              <ResultDisplay 
+                status={status}
+                result={result}
+                exifInfo={exifInfo}
+                onScanNew={handleReset}
+                onContinue={handleContinueScan}
+                exifTime={exifTime}
+                geminiTime={geminiTime}
+              />
             </div>
           </div>
-        )}
 
-        {(status === 'analyzing' || status === 'complete') && (
-          <ResultDisplay 
-            result={result} 
-            isLoading={status === 'analyzing'} 
-            previewUrl={previewUrl}
-            onReset={handleReset}
-          />
-        )}
+          {/* Bottom Section 60% (Increased size): EXIF Data */}
+          <div className="h-[60%] bg-slate-900/90 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden flex flex-col min-h-0 shadow-2xl">
+            <ExifDisplay exifData={exifInfo} />
+          </div>
+        </div>
+
+        {/* Right Sidebar 30%: Customer Chat */}
+        <div className="w-[30%] bg-slate-900/90 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden flex flex-col h-full shadow-2xl">
+          <ChatSection />
+        </div>
       </main>
-      
-      <footer className="py-8 text-center text-slate-400 text-sm">
-        <p>© {new Date().getFullYear()} AI Detector. This tool uses EXIF + Gemini to detect AI and may make mistakes.</p>
-      </footer>
     </div>
   );
 };
 
 export default App;
+

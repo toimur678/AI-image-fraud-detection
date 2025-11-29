@@ -57,17 +57,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, i
   }, [handleFile]);
 
   return (
-    <div className="w-full max-w-xl mx-auto mt-8">
+    <div className="w-full h-full flex flex-col justify-center items-center p-4">
       <div
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         className={`
-          relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300
+          relative w-full h-full flex flex-col items-center justify-center p-6 text-center transition-all duration-300 rounded-2xl border-2 border-dashed
           ${isAnalyzing ? 'opacity-50 pointer-events-none grayscale' : ''}
           ${isDragging 
-            ? 'border-blue-500 bg-blue-50 scale-[1.02]' 
-            : 'border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50'}
+            ? 'bg-indigo-500/20 border-indigo-400/50 scale-[1.02]' 
+            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}
         `}
       >
         <input
@@ -79,24 +79,24 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, i
         />
         
         <div className="flex flex-col items-center justify-center gap-4">
-          <div className={`p-4 rounded-full ${isDragging ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
-            {isDragging ? <Upload size={32} /> : <ImageIcon size={32} />}
+          <div className={`p-4 rounded-full shadow-sm transition-colors ${isDragging ? 'bg-indigo-500/30 text-white' : 'bg-white/10 text-white'}`}>
+            {isDragging ? <Upload size={28} /> : <ImageIcon size={28} />}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">
-              {isDragging ? 'Drop image here' : 'Upload an image'}
+            <h3 className="text-lg font-bold text-white mb-2">
+              {isDragging ? 'Drop image here' : 'Upload Evidence'}
             </h3>
-            <p className="text-sm text-slate-500 mt-1">
-              Drag and drop or click to browse
+            <p className="text-sm text-white/70 max-w-[220px] mx-auto leading-relaxed">
+              Drag and drop your file here or click to browse from your computer
             </p>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 text-sm border border-red-100 animate-fade-in">
-          <AlertCircle size={16} />
-          {error}
+        <div className="absolute bottom-4 left-4 right-4 p-3 bg-red-500/20 text-red-100 text-sm rounded-xl border border-red-500/30 flex items-center gap-2 shadow-sm animate-fade-in">
+          <AlertCircle size={16} className="flex-shrink-0" />
+          <span className="break-words">{error}</span>
         </div>
       )}
     </div>

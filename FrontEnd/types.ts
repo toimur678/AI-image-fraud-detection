@@ -21,4 +21,5 @@ export interface ExifAnalysis {
   software?: string;
   hasGps: boolean;
   hasExif: boolean;
+  rawMetadata?: any;
 }

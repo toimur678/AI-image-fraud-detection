@@ -1,132 +1,166 @@
 import React from 'react';
-import { AnalysisResult, DetectionVerdict } from '../types';
-import { CheckCircle2, XCircle, HelpCircle, AlertTriangle } from 'lucide-react';
+import { AnalysisResult, DetectionVerdict, ExifAnalysis } from '../types';
+import { CheckCircle2, HelpCircle, AlertTriangle, Scan, Upload, Sparkles, Clock } from 'lucide-react';
 
 interface ResultDisplayProps {
+  status: 'idle' | 'analyzing' | 'complete' | 'error';
   result: AnalysisResult | null;
-  isLoading: boolean;
-  previewUrl: string | null;
-  onReset: () => void;
+  exifInfo: ExifAnalysis | null;
+  onScanNew: () => void;
+  onContinue: () => void;
+  exifTime: number | null;
+  geminiTime: number | null;
 }
 
-export const ResultDisplay: React.FC<ResultDisplayProps> = ({ result, isLoading, previewUrl, onReset }) => {
-  if (!previewUrl) return null;
+export const ResultDisplay: React.FC<ResultDisplayProps> = ({ 
+  status, 
+  result, 
+  exifInfo, 
+  onScanNew, 
+  onContinue,
+  exifTime,
+  geminiTime
+}) => {
 
-  const getVerdictColor = (verdict: DetectionVerdict) => {
-    switch (verdict) {
-      case DetectionVerdict.YES: return 'bg-purple-100 text-purple-700 border-purple-200';
-      case DetectionVerdict.NO: return 'bg-green-100 text-green-700 border-green-200';
-      case DetectionVerdict.NOT_SURE: return 'bg-amber-100 text-amber-700 border-amber-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
+  // State: Analyzing
+  if (status === 'analyzing') {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
+        <div className="relative w-20 h-20 mb-6">
+          <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-indigo-400 rounded-full border-t-transparent animate-spin"></div>
+        </div>
+        <h3 className="text-xl font-bold text-white mb-2">Scanning Image...</h3>
+        <p className="text-white/60 text-sm">Analyzing metadata and visual patterns</p>
+      </div>
+    );
+  }
 
-  const getVerdictIcon = (verdict: DetectionVerdict) => {
-    switch (verdict) {
-      case DetectionVerdict.YES: return <SparklesIcon className="w-12 h-12 text-purple-600" />;
-      case DetectionVerdict.NO: return <CheckCircle2 className="w-12 h-12 text-green-600" />;
-      case DetectionVerdict.NOT_SURE: return <HelpCircle className="w-12 h-12 text-amber-600" />;
-      default: return null;
-    }
-  };
+  // State: Idle (No image yet)
+  if (status === 'idle') {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
+        <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4 text-indigo-400">
+          <Scan size={32} />
+        </div>
+        <h3 className="text-xl font-bold text-white mb-2">Ready to Scan</h3>
+        <p className="text-white/60 text-sm max-w-xs leading-relaxed">
+          Upload an image to begin the forensic analysis process.
+        </p>
+      </div>
+    );
+  }
 
-  const getVerdictHeadline = (verdict: DetectionVerdict) => {
-    switch (verdict) {
-      case DetectionVerdict.YES: return 'Likely Google AI';
-      case DetectionVerdict.NO: return 'Likely Human / Other';
-      case DetectionVerdict.NOT_SURE: return 'Uncertain';
-      default: return '';
-    }
-  };
+  // State: EXIF Done, Waiting for Gemini or Result
+  const showContinue = exifInfo && !result && status !== 'error';
+  const showResult = !!result;
+
+  // Calculate score for display (Mock logic for now if not present)
+  const score = result ? result.confidence : (exifInfo?.isOriginal ? 0 : 88);
+  const scoreLabel = result ? (result.verdict === DetectionVerdict.YES ? 'Fake' : 'Real') : (exifInfo?.isOriginal ? 'Clean' : 'Suspicious');
+  const scoreColor = score > 50 ? 'text-red-400' : 'text-green-400';
+  const ringColor = score > 50 ? 'stroke-red-500' : 'stroke-green-500';
+
+  // Format time helper
+  const formatTime = (ms: number | null) => ms ? `${Math.round(ms)}ms` : 'N/A';
+  const totalTime = (exifTime || 0) + (geminiTime || 0);
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-8 flex flex-col md:flex-row gap-8 items-start animate-fade-in">
+    <div className="w-full h-full flex items-center justify-between animate-fade-in px-6 py-4">
       
-      {/* Image Preview Column */}
-      <div className="w-full md:w-1/2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="relative aspect-square md:aspect-auto md:h-[400px] w-full overflow-hidden rounded-xl bg-slate-100">
-           <img 
-            src={previewUrl} 
-            alt="Analyzed content" 
-            className="w-full h-full object-contain"
-          />
+      {/* Left Side: Score Circle */}
+      <div className="flex-shrink-0">
+        <div className="relative w-36 h-36 flex items-center justify-center">
+          {/* Background Ring */}
+          <svg className="w-full h-full transform -rotate-90">
+            <circle
+              cx="72"
+              cy="72"
+              r="64"
+              stroke="currentColor"
+              strokeWidth="10"
+              fill="transparent"
+              className="text-white/10"
+            />
+            {/* Progress Ring */}
+            <circle
+              cx="72"
+              cy="72"
+              r="64"
+              stroke="currentColor"
+              strokeWidth="10"
+              fill="transparent"
+              strokeDasharray={402}
+              strokeDashoffset={402 - (402 * score) / 100}
+              strokeLinecap="round"
+              className={`${ringColor} transition-all duration-1000 ease-out`}
+            />
+          </svg>
+          
+          {/* Center Text */}
+          <div className="absolute flex flex-col items-center">
+            <span className={`text-4xl font-bold ${scoreColor}`}>
+              {score}%
+            </span>
+            <span className="text-xs font-semibold text-white/40 uppercase tracking-wider mt-1">
+              {scoreLabel}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Result Column */}
-      <div className="w-full md:w-1/2 flex flex-col gap-6">
+      {/* Right Side: Info and Actions */}
+      <div className="flex-1 flex flex-col justify-between h-full ml-6">
         
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full min-h-[300px] bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 bg-blue-50 rounded-full animate-pulse"></div>
-              </div>
-            </div>
-            <h3 className="mt-6 text-xl font-semibold text-slate-800">Analyzing Image...</h3>
-            <p className="text-slate-500 mt-2 text-center max-w-xs">
-              Checking for visual artifacts, metadata patterns, and stylistic markers.
+        {/* Top: Status and Timing Info */}
+        <div className="flex flex-col gap-2">
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-1 break-words">
+              {showResult ? result?.verdict : (exifInfo?.isOriginal ? 'No' : 'Suspicious')}
+            </h2>
+            <p className="text-white/70 text-sm">
+              {showResult ? 'AI Analysis Complete' : 'Metadata Analysis Complete'}
             </p>
           </div>
-        ) : result ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm h-full flex flex-col">
-            <div className="flex items-start justify-between mb-6">
-               <div className={`px-4 py-2 rounded-full border text-sm font-semibold tracking-wide uppercase ${getVerdictColor(result.verdict)}`}>
-                  AI Detection Result
-               </div>
-               {result.confidence > 0 && (
-                 <div className="text-sm font-medium text-slate-400">
-                   {result.confidence}% Confidence
-                 </div>
-               )}
+          
+          {/* Processing Time Info */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-full border border-white/10 text-xs font-medium text-white/80 w-fit">
+              <Clock size={12} />
+              <span>Total: {formatTime(totalTime)}</span>
             </div>
-
-            <div className="flex flex-col items-center text-center mb-8">
-               <div className="mb-4 p-4 rounded-full bg-slate-50">
-                 {getVerdictIcon(result.verdict)}
-               </div>
-               <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                 {result.verdict}
-               </h2>
-               <p className="text-lg text-slate-600 font-medium">
-                 {getVerdictHeadline(result.verdict)}
-               </p>
-            </div>
-
-            <div className="bg-slate-50 rounded-xl p-6 mb-8 border border-slate-100">
-              <h4 className="text-sm font-semibold text-slate-900 mb-2 uppercase tracking-wider">Analysis</h4>
-              <p className="text-slate-600 leading-relaxed">
-                {result.reasoning}
-              </p>
-            </div>
-
-            <div className="mt-auto">
-              <button 
-                onClick={onReset}
-                className="w-full py-3.5 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                Analyze Another Image
-              </button>
+            <div className="text-[10px] text-white/50 pl-1">
+              EXIF: {formatTime(exifTime)} • AI: {formatTime(geminiTime)}
             </div>
           </div>
-        ) : null}
+        </div>
+
+        {/* Bottom: Action Buttons */}
+        <div className="flex flex-col gap-2.5">
+          {showContinue && (
+            <button
+              onClick={onContinue}
+              className="w-full py-2 px-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-full font-semibold shadow-lg shadow-black/20 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            >
+              <Sparkles size={16} />
+              <span className="truncate">Scan with Gemini</span>
+            </button>
+          )}
+          
+          <button
+            onClick={onScanNew}
+            className={`w-full py-2 px-3 rounded-full font-semibold transition-all flex items-center justify-center gap-2
+              ${showContinue 
+                ? 'bg-white/10 border-2 border-white/20 text-white hover:bg-white/20' 
+                : 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white hover:from-indigo-500 hover:to-indigo-400 shadow-lg shadow-black/20'}
+            `}
+          >
+            <Upload size={16} />
+            <span className="truncate">Scan New File</span>
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-const SparklesIcon = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-  </svg>
-);
