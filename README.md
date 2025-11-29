@@ -1,6 +1,14 @@
-# AI Image Authenticity Detector
+<div align="center">
+  <img src="assets/logo.jpeg" alt="AI Image Authenticity Detector Logo" width="120" />
 
-A web application that analyzes images to determine whether they were AI-generated or authentic. This project is conceptually inspired by Google's SynthID watermarking technology used in Gemini 3 Pro, which embeds imperceptible watermarks in AI-generated images for detection purposes.
+  # AI Image Authenticity Detector
+
+  <p>
+    A web application that analyzes images to determine whether they were AI-generated or authentic.
+  </p>
+</div>
+
+This project is conceptually inspired by Google's SynthID watermarking technology used in Gemini 3 Pro, which embeds imperceptible watermarks in AI-generated images for detection purposes.
 
 ## Project Context
 
@@ -25,6 +33,10 @@ Each analysis produces a verdict ("Likely AI-Generated", "Likely Authentic", or 
 - **Customer support simulation** featuring a chat interface for real-time image analysis
 - **Activity logging** to track analysis history locally
 - **Detailed analysis reports** with confidence scores and evidence-based reasoning
+
+## Screenshots
+
+![Application Screenshot](assets/screenshot.jpeg)
 
 ## Tech Stack
 
@@ -119,7 +131,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Inspired by Google's SynthID watermarking technology
 - Powered by Google Gemini API
