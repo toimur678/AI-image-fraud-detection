@@ -1,42 +1,56 @@
 <div align="center">
-  <img src="assets/logo.jpeg" alt="AI Image Authenticity Detector Logo" width="120" />
+  <img src="assets/logo.jpg" alt="Food Delivery Fraud Detector Logo" width="120" style="border-radius: 24px" />
 
-  # AI Image Authenticity Detector
+  # Food Delivery Fraud Detector
 
   <p>
-    A web application that analyzes images to determine whether they were AI-generated or authentic.
+    A specialized forensic tool for food delivery platforms to detect fraudulent refund claims involving AI-generated or manipulated food images.
   </p>
 </div>
 
-This project is conceptually inspired by Google's SynthID watermarking technology used in Gemini 3 Pro, which embeds imperceptible watermarks in AI-generated images for detection purposes.
+As of November 2025, the food delivery industry is battling a sophisticated wave of refund fraud. Scammers are leveraging next-generation AI models like **Nano Banana Pro** to generate hyper-realistic images of spoiled, spilled, or incorrect orders. These "evidence" photos are often indistinguishable from reality to the naked eye.
+
+This application serves as a defense mechanism, combining metadata forensics with advanced AI analysis to determine if a submitted image is a genuine photo of a delivery or a synthetic fabrication.
 
 ## Project Context
 
-While Google's SynthID technology for image detection isn't publicly available yet, this application demonstrates the concept using Google AI Studio's Gemini API for visual analysis. Once Google releases an official SynthID detection API, it will be integrated to provide direct watermark detection capabilities. The current implementation maintains the same conceptual approach: combining metadata forensics with AI-powered visual analysis.
+While Google's SynthID technology is a key defense, this application provides a comprehensive verification layer using Google AI Studio's Gemini API. It is specifically tuned to identify the subtle artifacts left by models like Nano Banana Pro, which are popular in underground fraud communities for generating "proof" of ruined food.
 
 ## How It Works
 
-The application employs a two-stage detection system:
+The application employs a two-stage detection system optimized for food photography:
 
-1. **Metadata Forensics:** Examines EXIF data using `exifr` to identify anomalies such as missing camera information, traces of editing software, timestamp inconsistencies, and other metadata red flags common in AI-generated or manipulated images.
+1. **Metadata Forensics:** Examines EXIF data using `exifr` to identify anomalies. Real delivery photos usually contain specific smartphone camera data. We look for missing camera info, traces of editing software (often used to "spoil" food digitally), and timestamp inconsistencies relative to the delivery time.
 
-2. **AI Visual Analysis:** Leverages Google's Gemini 3 Pro model to detect visual artifacts characteristic of AI generation, including unnatural textures, symmetry anomalies, lighting inconsistencies, and text rendering problems.
+2. **AI Visual Analysis:** Leverages Google's Gemini 3 Pro model to detect visual artifacts. It looks for SynthID also "dream-like" textures in food, symmetry anomalies in packaging, and lighting inconsistencies that betray a generated image.
 
-Each analysis produces a verdict ("Likely AI-Generated", "Likely Authentic", or "Inconclusive"), a confidence score, and detailed reasoning explaining the determination.
+Each analysis produces a verdict ("Likely AI-Generated", "Likely Authentic", or "Inconclusive"), a confidence score, and detailed reasoning to support the refund decision.
 
 ## Features
 
-- **Dual-layer detection system** combining EXIF analysis and AI visual inspection
-- **Comprehensive metadata viewer** displaying camera details, software traces, GPS data, and edit history
-- **Interactive interface** with drag-and-drop image upload
-- **Zoomable image preview** for detailed examination
-- **Customer support simulation** featuring a chat interface for real-time image analysis
-- **Activity logging** to track analysis history locally
-- **Detailed analysis reports** with confidence scores and evidence-based reasoning
+- **Fraud Detection Pipeline:** Specialized for identifying fake "spilled drink" or "wrong item" photos.
+- **Metadata Forensics:** Detects if an image was edited to look worse or generated from scratch.
+- **Interactive Verification:** Drag-and-drop interface for support agents to quickly check claims.
+- **Zoomable Inspection:** Detailed view to spot AI artifacts in food textures.
+- **Refund Simulation:** Chat interface simulating a customer support interaction for training and testing.
+- **Audit Logging:** Tracks analysis history for dispute resolution.
+- **Detailed Reports:** Evidence-based reasoning to justify refund approvals or denials.
 
 ## Screenshots
 
-![Application Screenshot](assets/screenshot.jpeg)
+### Refund Verification Workflow
+
+**1. Edited Image Detection (Fraud Attempt)**
+![Edited Image Analysis](assets/Screenshot1.png)
+*The system detects metadata anomalies in a photo submitted for a "refund" claim. The metadata reveals traces of editing software, suggesting the user digitally altered a photo to get a refund. The process stops here; the claim is flagged.*
+
+**2. Unedited Image Submission**
+![Unedited Image Upload](assets/Screenshot2.png)
+*The customer is asked to provide the original, unedited photo from their camera roll to proceed with the claim.*
+
+**3. AI Authenticity Confirmation (Valid Claim)**
+![Gemini Verification](assets/Screenshot3.png)
+*Gemini 3 Pro analyzes the unedited image. It checks for the specific visual signatures of Nano Banana Pro and other generators. Finding none, it determines the image is "Likely Authentic". The food is genuinely spoiled, and the refund is approved.*
 
 ## Tech Stack
 
@@ -106,22 +120,21 @@ FrontEnd/
 
 ## Usage
 
-1. **Upload an image** using the drag-and-drop interface or file picker
+1. **Upload a claim photo** using the drag-and-drop interface.
 
 2. **Analysis pipeline:**
-   - EXIF metadata scan identifies suspicious patterns or anomalies
-   - AI visual analysis detects generation artifacts and inconsistencies
-   - Results are combined for a final determination
+   - EXIF metadata scan checks for editing or stripped metadata (common in generated images).
+   - AI visual analysis looks for "Nano Banana Pro" artifacts in the food items.
+   - Results are combined for a final determination.
 
 3. **Review findings:**
-   - Overall verdict with confidence percentage
-   - Detailed reasoning for the determination
-   - Complete EXIF metadata breakdown
-   - Visual evidence viewer
+   - **Verdict:** Authentic (Approve Refund) vs. AI/Edited (Deny Refund).
+   - **Confidence:** How sure the system is.
+   - **Reasoning:** Detailed explanation for the support agent.
 
 ## Future Development
 
-Once Google releases the official SynthID detection API, this project will be updated to incorporate direct watermark detection, providing more accurate identification of Gemini-generated images. The current implementation serves as a functional proof-of-concept using available technologies.
+As scammers evolve from Nano Banana Pro to newer models, this tool will be updated with specific detection signatures. Future versions will integrate directly with food delivery platform APIs to automate the refund decision process based on the fraud score.
 
 ## Contributing
 

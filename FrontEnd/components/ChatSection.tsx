@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Send, User, Bot, MoreHorizontal, Paperclip, Plus, X, Trash2, ShoppingBag, ShieldCheck } from 'lucide-react';
+import { Send, User, Bot, MoreHorizontal, Paperclip, Plus, X, Trash2, ShoppingBag, ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react';
 import { messageBus } from '../services/messageBus';
+import { Language, translations } from '../translations';
+import { AnalysisResult, ExifAnalysis, DetectionVerdict } from '../types';
 
 interface IncomingMessage {
   id: number;
@@ -29,9 +31,13 @@ interface Message {
 interface ChatSectionProps {
   currentUser: 'customer' | 'agent';
   onScanImage?: (file: File, base64: string, mimeType: string) => void;
+  language: Language;
+  result?: AnalysisResult | null;
+  exifInfo?: ExifAnalysis | null;
 }
 
-export const ChatSection: React.FC<ChatSectionProps> = ({ currentUser, onScanImage }) => {
+export const ChatSection: React.FC<ChatSectionProps> = ({ currentUser, onScanImage, language, result, exifInfo }) => {
+  const t = translations[language].chatSection;
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const raw = localStorage.getItem('support_messages');
@@ -63,6 +69,13 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ currentUser, onScanIma
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File is too large. Please upload an image under 10MB.");
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (ev) => {
         if (ev.target?.result) {
@@ -158,24 +171,37 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ currentUser, onScanIma
   // Since ChatSection is reused, we should use neutral or variable-based colors, or check context.
   // However, the request asked for specific logos.
 
+  // Determine popup state
+  let popupAction: 'report' | 'refund' | null = null;
+  if (currentUser === 'agent' && (result || exifInfo)) {
+    const isAiGenerated = result?.verdict === DetectionVerdict.YES;
+    const isEdited = exifInfo && !exifInfo.isOriginal;
+    
+    if (isAiGenerated || isEdited) {
+      popupAction = 'report';
+    } else {
+      popupAction = 'refund';
+    }
+  }
+
   return (
     <div className="flex flex-col h-full font-sans relative">
       {/* Header */}
       <div className={`p-4 border-b flex justify-between items-center ${currentUser === 'agent' ? 'border-white/10 bg-transparent' : 'border-slate-100 bg-white'}`}>
         <div>
           <h3 className={`text-lg font-bold ${currentUser === 'agent' ? 'text-white' : 'text-slate-800'}`}>
-            {currentUser === 'agent' ? 'Customer Chat' : 'Support Agent'}
+            {currentUser === 'agent' ? t.customerChat : t.supportAgent}
           </h3>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="w-2 h-2 bg-green-400 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
-            <p className={`text-xs font-medium ${currentUser === 'agent' ? 'text-white/70' : 'text-slate-500'}`}>Active Now</p>
+            <p className={`text-xs font-medium ${currentUser === 'agent' ? 'text-white/70' : 'text-slate-500'}`}>{t.activeNow}</p>
           </div>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={handleClearChat}
             className={`p-2 rounded-full transition-colors ${currentUser === 'agent' ? 'hover:bg-white/10 text-white/50' : 'hover:bg-slate-100 text-slate-400'}`}
-            title="Clear Chat"
+            title={t.clearChat}
           >
             <Trash2 size={18} />
           </button>
@@ -240,7 +266,34 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ currentUser, onScanIma
       </div>
 
       {/* Input */}
-      <div className={`p-4 border-t ${currentUser === 'agent' ? 'bg-transparent border-white/10' : 'bg-white border-slate-100'}`}>
+      <div className={`p-4 border-t ${currentUser === 'agent' ? 'bg-transparent border-white/10' : 'bg-white border-slate-100'} relative`}>
+        
+        {/* Action Popup */}
+        {popupAction && (
+          <div className={`absolute bottom-full left-4 right-4 mb-2 p-3 rounded-xl shadow-lg backdrop-blur-md border flex items-center justify-between animate-fade-in-up z-10 ${
+            popupAction === 'report' 
+              ? 'bg-red-500/20 border-red-500/50 text-red-200' 
+              : 'bg-green-500/20 border-green-500/50 text-green-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {popupAction === 'report' ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
+              <span className="font-bold text-sm">
+                {popupAction === 'report' ? 'Report Customer' : 'Refund Customer'}
+              </span>
+            </div>
+            <button 
+              onClick={() => setInput(popupAction === 'report' ? "We have detected irregularities in the provided evidence. We cannot process this request." : "We have verified your evidence. Processing your refund now.")}
+              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                popupAction === 'report' 
+                  ? 'bg-red-500 text-white hover:bg-red-600' 
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+            >
+              Apply
+            </button>
+          </div>
+        )}
+
         {selectedImage && (
           <div className={`mb-2 flex items-center gap-2 p-2 rounded-lg w-fit ${currentUser === 'agent' ? 'bg-white/10' : 'bg-slate-100'}`}>
             <img src={selectedImage.base64} alt="preview" className="w-10 h-10 object-cover rounded" />
@@ -271,7 +324,7 @@ export const ChatSection: React.FC<ChatSectionProps> = ({ currentUser, onScanIma
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
+              placeholder={t.typeMessage}
               className={`w-full pl-5 pr-12 py-3 rounded-full text-sm focus:outline-none focus:ring-2 transition-all ${
                 currentUser === 'agent' 
                   ? 'bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:ring-indigo-500/50 focus:border-indigo-500/50' 

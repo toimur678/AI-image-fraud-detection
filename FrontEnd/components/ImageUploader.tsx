@@ -1,24 +1,27 @@
 import React, { useCallback, useState } from 'react';
 import { Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Language, translations } from '../translations';
 
 interface ImageUploaderProps {
   onImageSelected: (file: File, base64: string, mimeType: string, previewUrl: string) => void;
   isAnalyzing: boolean;
+  language: Language;
 }
 
-export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, isAnalyzing }) => {
+export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, isAnalyzing, language }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = translations[language].imageUploader;
 
   const handleFile = useCallback((file: File) => {
     setError(null);
     if (!file.type.startsWith('image/')) {
-      setError("Please upload a valid image file.");
+      setError(t.errorType);
       return;
     }
 
     if (file.size > 20 * 1024 * 1024) { // 20MB limit
-      setError("File size too large. Please upload an image under 20MB.");
+      setError(t.errorSize);
       return;
     }
 
@@ -30,7 +33,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, i
       onImageSelected(file, base64Data, mimeType, result);
     };
     reader.readAsDataURL(file);
-  }, [onImageSelected]);
+  }, [onImageSelected, t]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -84,10 +87,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, i
           </div>
           <div>
             <h3 className="text-lg font-bold text-white mb-2">
-              {isDragging ? 'Drop image here' : 'Upload Evidence'}
+              {isDragging ? t.dropHere : t.uploadEvidence}
             </h3>
             <p className="text-sm text-white/70 max-w-[220px] mx-auto leading-relaxed">
-              Drag and drop your file here or click to browse from your computer
+              {t.dragDrop}
             </p>
           </div>
         </div>

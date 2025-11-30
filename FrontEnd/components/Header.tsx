@@ -1,7 +1,19 @@
 import React from 'react';
-import { Banana, ScanSearch } from 'lucide-react';
+import { Banana, ScanSearch, Globe } from 'lucide-react';
+import { Language, translations } from '../translations';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ language, setLanguage }) => {
+  const t = translations[language].header;
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'tr' : 'en');
+  };
+
   return (
     <header className="w-full py-3 px-6 flex items-center justify-between z-50">
       <div className="flex items-center gap-3">
@@ -13,7 +25,7 @@ export const Header: React.FC = () => {
             FNB<span className="font-light text-white/90">AI</span>
           </h1>
           <p className="text-[10px] text-white/70 font-medium tracking-widest uppercase">
-            Next-Gen Fraud Detection
+            {t.subtitle}
           </p>
         </div>
       </div>
@@ -21,9 +33,16 @@ export const Header: React.FC = () => {
       <div className="flex items-center gap-4">
         <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20 backdrop-blur-sm text-white/80 text-xs font-medium">
           <ScanSearch size={14} />
-          <span>v1.1.0-beta</span>
+          <span>{t.version}</span>
         </div>
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 border-2 border-white/30 shadow-lg"></div>
+        <button 
+          onClick={toggleLanguage}
+          className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full border border-white/30 shadow-lg transition-all text-white text-xs font-medium"
+          title="Change Language"
+        >
+          <Globe size={14} />
+          <span>{language.toUpperCase()}</span>
+        </button>
       </div>
     </header>
   );

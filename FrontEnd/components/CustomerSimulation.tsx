@@ -13,7 +13,7 @@ export const CustomerSimulation: React.FC = () => {
             <h2 className="text-lg font-bold text-[#d70f64]">Customer Support</h2>
             <p className="text-sm text-slate-500">Chat with support and upload images directly in the chat.</p>
           </div>
-          <ChatSection currentUser="customer" />
+          <ChatSection currentUser="customer" language="en" />
         </div>
       </main>
     </div>

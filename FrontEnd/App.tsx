@@ -9,6 +9,7 @@ import { AnalysisResult, AnalysisStatus, ExifAnalysis } from './types';
 import { analyzeExif } from './services/exifService';
 import { messageBus } from './services/messageBus';
 import { useEffect } from 'react';
+import { Language } from './translations';
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AnalysisStatus>('idle');
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exifInfo, setExifInfo] = useState<ExifAnalysis | null>(null);
+  const [language, setLanguage] = useState<Language>('en');
   
   // Timing state
   const [exifTime, setExifTime] = useState<number | null>(null);
@@ -142,7 +144,7 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-full bg-[conic-gradient(at_top_left,_var(--tw-gradient-stops))] from-[#4a5fff] via-[#5c70ff] to-[#4a5fff] flex flex-col overflow-hidden font-sans text-white">
-      <Header />
+      <Header language={language} setLanguage={setLanguage} />
       
       <main className="flex-1 flex gap-4 px-6 pb-6 min-h-0">
         {/* Left Main Area 70% */}
@@ -167,6 +169,7 @@ const App: React.FC = () => {
                 <ImageUploader 
                   onImageSelected={handleImageSelected} 
                   isAnalyzing={status === 'analyzing'} 
+                  language={language}
                 />
               )}
             </div>
@@ -181,13 +184,15 @@ const App: React.FC = () => {
                 onContinue={handleContinueScan}
                 exifTime={exifTime}
                 geminiTime={geminiTime}
+                language={language}
+                error={error}
               />
             </div>
           </div>
 
           {/* Bottom Section 60% (Increased size): EXIF Data */}
           <div className="h-[60%] bg-slate-900/90 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden flex flex-col min-h-0 shadow-2xl">
-            <ExifDisplay exifData={exifInfo} />
+            <ExifDisplay exifData={exifInfo} language={language} />
           </div>
         </div>
 
@@ -196,6 +201,9 @@ const App: React.FC = () => {
           <ChatSection 
             currentUser="agent" 
             onScanImage={(file, base64, mimeType) => handleImageSelected(file, base64, mimeType, base64)}
+            language={language}
+            result={result}
+            exifInfo={exifInfo}
           />
         </div>
       </main>
