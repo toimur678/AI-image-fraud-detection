@@ -34,11 +34,22 @@ const App: React.FC = () => {
       geminiScanTimeMs: gTime === 'N/A' ? 'N/A' : Math.round(gTime)
     };
 
-    // Save to localStorage as a mock "file"
-    const existingLogs = JSON.parse(localStorage.getItem('activitylog') || '[]');
-    existingLogs.push(logEntry);
-    localStorage.setItem('activitylog', JSON.stringify(existingLogs));
-    console.log('Activity Logged:', logEntry);
+    try {
+      // Save to localStorage as a mock "file"
+      const existingLogs = JSON.parse(localStorage.getItem('activitylog') || '[]');
+      existingLogs.push(logEntry);
+
+      // Limit log size to prevent QuotaExceededError
+      const MAX_LOGS = 50;
+      if (existingLogs.length > MAX_LOGS) {
+        existingLogs.splice(0, existingLogs.length - MAX_LOGS);
+      }
+
+      localStorage.setItem('activitylog', JSON.stringify(existingLogs));
+      console.log('Activity Logged:', logEntry);
+    } catch (e) {
+      console.warn('Failed to save activity log to localStorage:', e);
+    }
   };
 
   const handleImageSelected = async (
